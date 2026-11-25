@@ -39,3 +39,11 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - CI Postgres: the `homelab` runners are ARC pods without a Docker daemon, so a `services:` container fails at
   `docker version` ("Value cannot be null. (Parameter 'network')"). `test-go` installs `postgresql-16` from apt
   (Ubuntu 24.04 runner image, passwordless sudo) and starts it with `pg_ctlcluster`.
+
+
+### dHash package (2026-11-25, pg-hqk4)
+
+- `internal/dhash` is stdlib only (the test also uses `golang.org/x/image/draw`), so photosort can take both files byte-for-byte.
+- Golden: the 64x48 gradient `R=G=B=(x*7+y*13)%256` hashes to `f3ce3c73cf9c73e7`. Both repos must assert this value.
+- A JPEG q85 round trip plus a 50% `ApproxBiLinear` resize stays within Hamming distance 4 of the original.
+- Adding `golang.org/x/image` bumped `x/sync` and `x/text` through `go get`.
