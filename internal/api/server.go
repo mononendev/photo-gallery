@@ -9,9 +9,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/mononendev/photo-gallery/internal/gphotos"
 )
 
 // Server holds what the handlers need.
@@ -19,6 +22,29 @@ type Server struct {
 	Pool    *pgxpool.Pool
 	Version string
 	Log     *slog.Logger
+
+	// BaseCtx is the parent of background syncs; nil means context.Background().
+	BaseCtx context.Context
+	// GPhotos fetches the albums for syncs; nil means a client with defaults.
+	GPhotos *gphotos.Client
+
+	syncs sync.WaitGroup
+}
+
+// WaitSyncs blocks until the background syncs have recorded their end state, or ctx is done.
+func (s *Server) WaitSyncs(ctx context.Context) {
+	done := make(chan struct{})
+	go func() { s.syncs.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
+}
+
+// status is a handler result with a status code other than 200; a nil Body sends no body.
+type status struct {
+	Code int
+	Body any
 }
 
 // HTTPError is an error with a status; the body is {"detail": ...}.
@@ -45,6 +71,14 @@ func (s *Server) wrap(h handler) http.HandlerFunc {
 				he = &HTTPError{500, err.Error()}
 			}
 			writeJSON(w, he.Code, map[string]any{"detail": he.Detail})
+			return
+		}
+		if st, ok := v.(status); ok {
+			if st.Body == nil {
+				w.WriteHeader(st.Code)
+			} else {
+				writeJSON(w, st.Code, st.Body)
+			}
 			return
 		}
 		if v == nil {

@@ -112,3 +112,19 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
   500 answers are not cached.
 - Invalid `rating`, `tier`, `min_score` (0-5), `keeper`, `sort`, `offset`, `limit` answer 400; `limit` above 200 is
   clamped to 200.
+
+### Admin API and album sync (2026-11-25, pg-c76p)
+
+- `albumsync.MatchAlbum` follows the plan. `Source.TakenMS` is in milliseconds (photosort's `publish` converts
+  `SubSecTimeOriginal` "94" to 940); the hundredths filter compares `TakenMS/10` with the album millisecond `/10`.
+  When the filter leaves no candidate, the item falls to the hash step like any item without a time hit.
+- The hash step only downloads a thumbnail when it can use it: a time tie, or at least one unmatched source with a
+  dHash. An event synced before `photosort publish` ran therefore does no thumbnail requests.
+- `MatchAlbum` returns the matches and a joined error for failed thumbnail hashes. The matches stay valid; `Run`
+  logs the error and counts those items as unmatched.
+- `albumsync.RunStarted` runs a sync after `Store.StartSync` and records `done`/`failed` with a context that survives
+  cancellation, so a SIGTERM during a sync leaves `failed`, not `running`. `serve` also fails leftover `running`
+  rows at start. The CLI `sync --event` and the admin API share it.
+- Handlers needing a non-200 code (202, 204) return `status{Code, Body}` from `wrap`.
+- The e2e test routes the real share-URL prefix to a fake server with a rewriting `http.RoundTripper`, so URL
+  validation stays on the real prefixes.

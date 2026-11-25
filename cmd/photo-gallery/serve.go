@@ -15,6 +15,8 @@ import (
 
 	"github.com/mononendev/photo-gallery/internal/api"
 	"github.com/mononendev/photo-gallery/internal/db"
+	"github.com/mononendev/photo-gallery/internal/gphotos"
+	"github.com/mononendev/photo-gallery/internal/store"
 )
 
 func serveCmd() *cobra.Command {
@@ -39,7 +41,14 @@ func serveCmd() *cobra.Command {
 				return fmt.Errorf("migrating the database: %w", err)
 			}
 
-			srv := &api.Server{Pool: pool, Version: version, Log: slog.Default()}
+			if err := store.New(pool).MarkInterruptedSyncs(ctx); err != nil {
+				return fmt.Errorf("marking interrupted syncs: %w", err)
+			}
+
+			srv := &api.Server{
+				Pool: pool, Version: version, Log: slog.Default(), BaseCtx: ctx,
+				GPhotos: &gphotos.Client{HTTP: &http.Client{Timeout: 60 * time.Second}},
+			}
 			public := &http.Server{Addr: ":" + envOr("GALLERY_PORT", "8080"), Handler: srv.Public()}
 			admin := &http.Server{Addr: ":" + envOr("GALLERY_ADMIN_PORT", "8081"), Handler: srv.Admin()}
 
@@ -61,7 +70,11 @@ func serveCmd() *cobra.Command {
 			slog.Info("shutting down")
 			sctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			return errors.Join(public.Shutdown(sctx), admin.Shutdown(sctx))
+			err = errors.Join(public.Shutdown(sctx), admin.Shutdown(sctx))
+			// The base context is cancelled, so running syncs stop and record 'failed'; wait for that
+			// before the deferred pool.Close.
+			srv.WaitSyncs(sctx)
+			return err
 		},
 	}
 }
