@@ -61,7 +61,22 @@ func (c *Client) batchURL() string {
 }
 
 func readBody(resp *http.Response) ([]byte, error) {
-	return io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	b, err := io.ReadAll(io.LimitReader(resp.Body, maxBody+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > maxBody {
+		return nil, fmt.Errorf("response larger than 64 MiB")
+	}
+	return b, nil
+}
+
+// number decodes a JSON number and rejects null, which encoding/json would accept silently.
+func number[T int | int64](r json.RawMessage, out *T) error {
+	if string(r) == "null" {
+		return fmt.Errorf("null")
+	}
+	return json.Unmarshal(r, out)
 }
 
 // FetchAlbum resolves a share link and returns every item of the album.
@@ -112,7 +127,7 @@ func (c *Client) FetchAlbum(ctx context.Context, shareURL string) (Album, error)
 	if err := json.Unmarshal(meta[1], &alb.Title); err != nil {
 		return Album{}, fmt.Errorf("album page format changed: d[3][1] expected string title")
 	}
-	if err := json.Unmarshal(meta[21], &alb.Count); err != nil {
+	if err := number(meta[21], &alb.Count); err != nil {
 		return Album{}, fmt.Errorf("album page format changed: d[3][21] expected item count")
 	}
 	alb.Items = items
@@ -225,16 +240,16 @@ func parseItem(r json.RawMessage) (Item, error) {
 	if err := json.Unmarshal(info[0], &out.BaseURL); err != nil || out.BaseURL == "" {
 		return Item{}, fmt.Errorf("expected [1][0] string")
 	}
-	if err := json.Unmarshal(info[1], &out.Width); err != nil {
+	if err := number(info[1], &out.Width); err != nil {
 		return Item{}, fmt.Errorf("expected [1][1] number")
 	}
-	if err := json.Unmarshal(info[2], &out.Height); err != nil {
+	if err := number(info[2], &out.Height); err != nil {
 		return Item{}, fmt.Errorf("expected [1][2] number")
 	}
-	if err := json.Unmarshal(it[2], &out.TakenMS); err != nil {
+	if err := number(it[2], &out.TakenMS); err != nil {
 		return Item{}, fmt.Errorf("expected [2] number")
 	}
-	if err := json.Unmarshal(it[4], &out.TZOffsetMS); err != nil {
+	if err := number(it[4], &out.TZOffsetMS); err != nil {
 		return Item{}, fmt.Errorf("expected [4] number")
 	}
 	return out, nil
@@ -255,7 +270,7 @@ func (c *Client) Thumb(ctx context.Context, baseURL string) (image.Image, error)
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("thumb: HTTP %d", resp.StatusCode)
 	}
-	img, err := jpeg.Decode(resp.Body)
+	img, err := jpeg.Decode(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
 		return nil, fmt.Errorf("thumb: decode: %w", err)
 	}

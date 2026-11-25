@@ -105,3 +105,15 @@ func TestLiveAlbum(t *testing.T) {
 	}
 	t.Logf("thumb %v", img.Bounds())
 }
+
+func TestParseItemNull(t *testing.T) {
+	good := `["K",["https://x/K",1,2],1000,null,0]`
+	if _, err := parseItem([]byte(good)); err != nil {
+		t.Fatal(err)
+	}
+	bad := `["K",["https://x/K",1,2],null,null,0]`
+	_, err := parseItem([]byte(bad))
+	if err == nil || !strings.Contains(err.Error(), "expected [2] number") {
+		t.Errorf("err = %v", err)
+	}
+}
