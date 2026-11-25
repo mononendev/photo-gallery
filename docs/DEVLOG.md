@@ -47,3 +47,15 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Golden: the 64x48 gradient `R=G=B=(x*7+y*13)%256` hashes to `f3ce3c73cf9c73e7`. Both repos must assert this value.
 - A JPEG q85 round trip plus a 50% `ApproxBiLinear` resize stays within Hamming distance 4 of the original.
 - Adding `golang.org/x/image` bumped `x/sync` and `x/text` through `go get`.
+
+### Google Photos album client (2026-11-25, pg-dqqc)
+
+- `internal/gphotos` implements the "Album page format" above unchanged: the live format matched the plan, no index or
+  fixture changes were needed.
+- Live run against `https://photos.app.goo.gl/TysU32DNqBb1fKjU6` ("OCSF6 Selects"): 320 items for `Count` 320, in
+  2 pages (300 from `ds:1`, 20 from one batchexecute call), 2 s total. A `Thumb` of item 0 decoded as 400x600.
+- Parsing uses `json.RawMessage` arrays and checks each index, so a format change produces an error that names the
+  index (`album page format changed: item 12: expected [1][0] string`) rather than a panic.
+- Fixtures in `internal/gphotos/testdata` are synthetic: `album.html` (3 items, next token) and `page2.txt`
+  (`)]}'` prefix, length line, `wrb.fr` line with 1 item and a null token).
+- The live test `TestLiveAlbum` runs only with `GALLERY_LIVE_ALBUM_URL` set.
