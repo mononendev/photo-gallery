@@ -59,3 +59,16 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Fixtures in `internal/gphotos/testdata` are synthetic: `album.html` (3 items, next token) and `page2.txt`
   (`)]}'` prefix, length line, `wrb.fr` line with 1 item and a null token).
 - The live test `TestLiveAlbum` runs only with `GALLERY_LIVE_ALBUM_URL` set.
+
+### Schema and store (2026-11-25, pg-0kis)
+
+- `0001_init.sql` is the plan's schema plus `source_photos.taken_ms SMALLINT` and the index `(event_id, taken, taken_ms)`
+  for the sub-second matcher.
+- `db.Migrate` creates `schema_migrations` in its own locked transaction, then runs each file in its own transaction
+  under `pg_advisory_xact_lock(7262)`. The version check runs after the lock, so two replicas starting together apply
+  a file once.
+- `dbtest.New` isolates each test in schema `t_<random>` through the pool's `search_path` runtime param. The advisory
+  lock is database-wide, so tests migrating in parallel serialize briefly; measured whole store suite: about 4 s with -race.
+- `ReplaceAlbumPhotos` takes the Google album id as an extra argument (stored on the album) so step 6 needs no second call.
+- `SourcesForEvent` and `UpsertSources` store the dHash as `int64(uint64)`; callers see `*uint64`.
+- `Event` from `GetEvent`/`ListEvents` carries `Photos`, `Matched`, `Sources` counts for the admin list (computed by subqueries).

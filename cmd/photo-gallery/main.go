@@ -30,6 +30,7 @@ func main() {
 		SilenceErrors: true,
 	}
 	root.AddCommand(serveCmd())
+	root.AddCommand(migrateCmd())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
