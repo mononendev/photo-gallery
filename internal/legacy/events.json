@@ -1,0 +1,124 @@
+[
+  {
+    "slug": "ocsf4",
+    "title": "Oak City Shred Fest 4",
+    "series": "OCSF",
+    "event_date": "2024-05-04",
+    "description": "Photos from the 4th annual Oak City Shred Fest \nIIf you did something crazy or fun on camera, you're in the highlights; otherwise, photos of you are in 'all photos' \nShot on cameras from Armor-Dilloz.",
+    "albums": [
+      {
+        "name": "Highlights",
+        "share_url": "https://photos.app.goo.gl/NE5WsNxVp8wU15fq9"
+      },
+      {
+        "name": "All Photos",
+        "share_url": "https://photos.app.goo.gl/4ZuZcb7y3bs7fosL9"
+      }
+    ]
+  },
+  {
+    "slug": "ocsf5",
+    "title": "Oak City Shred Fest 5",
+    "series": "OCSF",
+    "event_date": "2025-04-26",
+    "description": "Photos from the 5th annual Oak City Shred Fest. \nIf you did something crazy or fun on camera, you're in the highlights; otherwise, photos of you are in 'all photos' Additional photos shot by [Canada Dave](https://www.instagram.com/nyx_design_dave/). \nShot on my personal cameras and cameras from Armor-Dilloz.",
+    "albums": [
+      {
+        "name": "Dave's Photos",
+        "share_url": "https://photos.app.goo.gl/EBJBn7KirwpVb15E6"
+      }
+    ]
+  },
+  {
+    "slug": "ocsf6",
+    "title": "Oak City Shred Fest 6",
+    "series": "OCSF",
+    "event_date": "2026-04-25",
+    "description": "Photos from the 6th annual Oak City Shred Fest.\nShot on my personal cameras and cameras from Armor-Dilloz.",
+    "albums": [
+      {
+        "name": "Highlights",
+        "share_url": "https://photos.app.goo.gl/TysU32DNqBb1fKjU6"
+      },
+      {
+        "name": "All Photos",
+        "share_url": "https://photos.app.goo.gl/GQPBwn7cHKCdjfK97"
+      },
+      {
+        "name": "Small Group Photo",
+        "share_url": "https://photos.app.goo.gl/4yC8eC85DeCuXq4k9"
+      }
+    ]
+  },
+  {
+    "slug": "flf7",
+    "title": "FLoat Life Fest 7",
+    "series": "FLF",
+    "event_date": "2024-09-12",
+    "description": "Photos from the 7th Float Life Fest \nThese photos were sorted fully autonomously using a series of image analysis heuristics that I built myself. \nThey're sorted in descending order - Bangers, Good, Mid. The categorization is primarily evaluated by the level of 'in-focus' the subject is. \nBecause this was binned by a piece of software, there are mistakes, so please scroll through all the albums. \nShot on my personal cameras and cameras from Armor-Dilloz",
+    "albums": [
+      {
+        "name": "Bangers",
+        "share_url": "https://photos.app.goo.gl/wrsmuMdT1WUmRqxJA"
+      },
+      {
+        "name": "Good",
+        "share_url": "https://photos.app.goo.gl/3GoRHbbxEnoDZHWn8"
+      },
+      {
+        "name": "Mid",
+        "share_url": "https://photos.app.goo.gl/gPEa5oHfqskokPp26"
+      }
+    ]
+  },
+  {
+    "slug": "flf8",
+    "title": "FLoat Life Fest 8",
+    "series": "FLF",
+    "event_date": "2025-09-13",
+    "description": "Photos from the 8th annual Float Life Fest \nIf you did something crazy or fun on camera, you're in the highlights; otherwise, photos of you are in 'all photos' \nShot entirely on Armor-Dilloz cameras\nAll Group Photos: https://drive.google.com/drive/folders/1S5nj9oc2_OdP_-SxhbVr-FjcEt6FxmAl?usp=sharing",
+    "albums": [
+      {
+        "name": "Small Group Photo",
+        "share_url": "https://photos.app.goo.gl/gtU8UcbS82j55BUy6"
+      },
+      {
+        "name": "Highlights",
+        "share_url": "https://photos.app.goo.gl/6zHAwEaonVLGWMs96"
+      },
+      {
+        "name": "All Photos",
+        "share_url": "https://photos.app.goo.gl/JRCQ7LiijjLpo47m9"
+      }
+    ]
+  },
+  {
+    "slug": "flfx",
+    "title": "FLoat Life Fest X",
+    "series": "FLF",
+    "event_date": "2026-09-11",
+    "description": "Photos from the 10th Float Life Fest \nSimilar to FLF7, this was sorted programatically. Same sort of heurestic differentiating between bangers, good and mid. \nShot entirely on Armor-Dilloz cameras",
+    "albums": [
+      {
+        "name": "Bangers",
+        "share_url": "https://photos.app.goo.gl/zmrYKXUo79xusfXW7"
+      },
+      {
+        "name": "Good",
+        "share_url": "https://photos.app.goo.gl/QdLfh6VXHA8fwA2p9"
+      },
+      {
+        "name": "Mid",
+        "share_url": "https://photos.app.goo.gl/LPtmb2uQmitTeTWSA"
+      },
+      {
+        "name": "Group Photo",
+        "share_url": "https://photos.app.goo.gl/EsTLXsqTkMuaBfDq9"
+      },
+      {
+        "name": "Podiums",
+        "share_url": "https://photos.app.goo.gl/d84MVFtCj93P6VBr7"
+      }
+    ]
+  }
+]

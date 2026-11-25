@@ -32,6 +32,7 @@ func main() {
 	root.AddCommand(serveCmd())
 	root.AddCommand(migrateCmd())
 	root.AddCommand(syncCmd())
+	root.AddCommand(seedLegacyCmd())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
