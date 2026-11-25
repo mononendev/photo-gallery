@@ -74,7 +74,7 @@ func (s *Server) mux(routes func(router)) http.Handler {
 }
 
 // Public is the read-only API behind the public ingress.
-func (s *Server) Public() http.Handler { return s.mux(s.publicRoutes) }
+func (s *Server) Public() http.Handler { return cacheable(s.mux(s.publicRoutes)) }
 
 // Admin is the management API: no login, reachable only on the LAN and from inside the cluster.
 func (s *Server) Admin() http.Handler { return s.mux(s.adminRoutes) }

@@ -96,3 +96,19 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Photo grid uses `useInfiniteQuery` (100 per page; API returns `{items,total}`). Hide/unhide patches the cached pages in place.
 - Types and `adminApi` were appended to `web/src/api/client.ts` (admin calls use `/admin-api`).
 - Verified with `pnpm run build && pnpm run lint`; not exercised against a live admin API (step 6 is a separate ticket).
+
+### Public API (2026-11-25, pg-0vap)
+
+- Queries are in `internal/store/public.go`; handlers in `internal/api/public.go`. The photo JSON comes straight
+  from `store.PublicPhoto`, so the field set is fixed in one place.
+- Dedupe is `DISTINCT ON (event, COALESCE('s'||source_photo_id, 'm'||media_key))` keeping the lowest album position.
+  Hidden photos and all filters (including `album`) are applied before the dedupe, so a visible copy in another album
+  still shows and `album=All` returns the copy in All. Sorting happens in the outer query.
+- `rating=none` means `source_photos.rating IS NULL`, which covers unmatched photos and matched photos without a
+  rating. Every other metadata filter is false for unmatched rows (NULL comparison).
+- `prev_id`/`next_id` use `lag`/`lead` over the event's deduped taken order (`taken_at, album position, position, id`).
+  A photo that lost the dedupe still gets the neighbors of its kept twin.
+- `Cache-Control: public, max-age=60` is set by a wrapper around the public mux, on 200 responses only, so 404 and
+  500 answers are not cached.
+- Invalid `rating`, `tier`, `min_score` (0-5), `keeper`, `sort`, `offset`, `limit` answer 400; `limit` above 200 is
+  clamped to 200.
