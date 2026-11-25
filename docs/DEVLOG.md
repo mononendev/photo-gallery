@@ -128,3 +128,19 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Handlers needing a non-200 code (202, 204) return `status{Code, Body}` from `wrap`.
 - The e2e test routes the real share-URL prefix to a fake server with a rewriting `http.RoundTripper`, so URL
   validation stays on the real prefixes.
+
+### Old gallery events (2026-11-25, pg-e7o6)
+
+- `internal/legacy/events.json` holds the 6 events of the old Next.js gallery (`content/events/*.md` in
+  `mononen/photo-gallery`), converted with a YAML parser so the `\n` breaks and markdown links in the descriptions
+  stay exact. `thumbnails` are dropped; covers come from the synced photos.
+- FLF8 lists "All Group Photos" as a Google Drive folder, which is not a Photos album and fails the share-link check.
+  It moved to the end of the FLF8 description as `All Group Photos: <url>` so the link is not lost.
+- `seed-legacy` upserts all 6 events (published) first, then syncs them one after another with the same state
+  updates as `sync`; one failed event does not stop the others, and the exit code is 1 if any failed.
+- Local run (no photosort sources, so everything is unmatched; 117 s total): ocsf4 5677 album photos (2 albums),
+  ocsf6 4384 (3), flf7 6692 (3), flf8 3310 (3), flfx 5843 (5). ocsf5 failed: its "Highlights"
+  (`photos.app.goo.gl/1sAcynuYV6H4GyQP6`) and "All Photos" (`photos.app.goo.gl/s6fHwKThu6gddX548`) links resolve
+  to a share page that answers HTTP 404, so the albums are no longer shared; only "Dave's Photos" still works. Since a
+  sync changes nothing when any album fails, ocsf5 shows no photos until its albums are re-shared or removed in the
+  admin page.
