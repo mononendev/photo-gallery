@@ -6,6 +6,9 @@ import EventPage from './pages/EventPage';
 import PhotoPage from './pages/PhotoPage';
 import Search from './pages/Search';
 import About from './pages/About';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminEvent from './pages/admin/AdminEvent';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
@@ -20,6 +23,10 @@ export default function App() {
             <Route path="/events/:slug/photos/:id" element={<PhotoPage />} />
             <Route path="/search" element={<Search />} />
             <Route path="/about" element={<About />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminEvents />} />
+            <Route path="events/:slug" element={<AdminEvent />} />
           </Route>
         </Routes>
       </BrowserRouter>
