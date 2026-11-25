@@ -1,21 +1,24 @@
 import { useSearchParams } from 'react-router-dom';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { publicApi, type PhotoQuery } from '../api/client';
 import { ErrorBox, Loading } from '../components/Status';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { PAGE_SIZE } from '../lib/filters';
+import { useQDraft } from '../lib/useQDraft';
 
 export default function Search() {
   const [sp, setSp] = useSearchParams();
-  const q = sp.get('q') ?? '';
+  const q = sp.get('q')?.trim() ?? '';
+  const [qText, setQText] = useQDraft(sp.get('q') ?? '');
   const keyword = sp.getAll('keyword');
-  const params: PhotoQuery = { q, keyword };
-  const enabled = q.trim() !== '' || keyword.length > 0;
+  const params: PhotoQuery = { q: q || undefined, keyword };
+  const enabled = q !== '' || keyword.length > 0;
   const photos = useInfiniteQuery({
     queryKey: ['photos', params],
     queryFn: ({ pageParam }) => publicApi.photos({ ...params, offset: pageParam, limit: PAGE_SIZE }),
     initialPageParam: 0,
     enabled,
+    placeholderData: keepPreviousData,
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.items.length, 0);
       return last.items.length > 0 && loaded < last.total ? loaded : undefined;
@@ -23,12 +26,6 @@ export default function Search() {
   });
   const items = photos.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const setQ = (v: string) =>
-    setSp((prev) => {
-      const n = new URLSearchParams(prev);
-      if (v) n.set('q', v); else n.delete('q');
-      return n;
-    }, { replace: true });
   const dropKeyword = (k: string) =>
     setSp((prev) => {
       const n = new URLSearchParams(prev);
@@ -40,7 +37,7 @@ export default function Search() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold">Search</h1>
-      <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search descriptions and keywords across all events"
+      <input autoFocus value={qText} onChange={(e) => setQText(e.target.value)} placeholder="Search descriptions and keywords across all events"
         className="mb-3 w-full max-w-xl rounded-md border border-gray-800 bg-gray-900 px-3 py-2" />
       {keyword.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">

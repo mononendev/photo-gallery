@@ -4,7 +4,7 @@ export const PAGE_SIZE = 60;
 
 export function parseFilters(sp: URLSearchParams): PhotoQuery {
   return {
-    q: sp.get('q') ?? undefined,
+    q: sp.get('q')?.trim() || undefined,
     keyword: sp.getAll('keyword'),
     rating: sp.getAll('rating'),
     tier: sp.getAll('tier'),

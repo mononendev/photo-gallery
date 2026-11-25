@@ -23,6 +23,8 @@ export default function PhotoPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (document.querySelector('[role="dialog"]')) return;
       if (e.target instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
       if (e.key === 'ArrowLeft' && prev != null) nav(`/events/${slug}/photos/${prev}`);
       if (e.key === 'ArrowRight' && next != null) nav(`/events/${slug}/photos/${next}`);
@@ -36,7 +38,7 @@ export default function PhotoPage() {
   if (!p) return null;
 
   const x = p.exif ?? {};
-  const hasRatings = p.rating != null || p.focus_tier != null || p.quality_score != null || p.keeper != null;
+  const hasRatings = p.rating != null || p.focus_tier != null || p.quality_score != null || p.keeper === true;
   const hasDesc = !!p.description || p.keywords.length > 0 || p.adjectives.length > 0 || !!p.subject || !!p.composition || !!p.action;
   const hasCam = x.camera != null || x.lens != null || x.focal_mm != null || x.f_number != null || x.shutter_s != null || x.iso != null;
   const btn = 'rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-sm hover:bg-gray-800';

@@ -1,9 +1,10 @@
 import { useSearchParams, useParams } from 'react-router-dom';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { publicApi, ApiError, type PhotoQuery } from '../api/client';
 import { ErrorBox, Loading } from '../components/Status';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { PAGE_SIZE, parseFilters } from '../lib/filters';
+import { useQDraft } from '../lib/useQDraft';
 import { RATING_COLORS, RATING_NAMES, TIER_NAMES, fmtDate } from '../lib/rating';
 
 const label = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400';
@@ -15,10 +16,12 @@ export default function EventPage() {
   const ev = useQuery({ queryKey: ['event', slug], queryFn: () => publicApi.event(slug) });
   const filters = parseFilters(sp);
   const params: PhotoQuery = { ...filters, event: slug };
+  const [qText, setQText] = useQDraft(sp.get('q') ?? '');
   const photos = useInfiniteQuery({
     queryKey: ['photos', params],
     queryFn: ({ pageParam }) => publicApi.photos({ ...params, offset: pageParam, limit: PAGE_SIZE }),
     initialPageParam: 0,
+    placeholderData: keepPreviousData,
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.items.length, 0);
       return last.items.length > 0 && loaded < last.total ? loaded : undefined;
@@ -71,8 +74,8 @@ export default function EventPage() {
         <aside className="w-full min-[900px]:sticky min-[900px]:top-20 min-[900px]:w-[260px] min-[900px]:shrink-0 space-y-4 rounded-lg border border-gray-800 bg-gray-900 p-4 min-[900px]:max-h-[calc(100vh-6rem)] min-[900px]:overflow-y-auto">
           <div>
             <label className={label} htmlFor="f-q">Search</label>
-            <input id="f-q" className={input} value={filters.q ?? ''} placeholder="carving, jump…"
-              onChange={(ev) => set('q', ev.target.value)} />
+            <input id="f-q" className={input} value={qText} placeholder="carving, jump…"
+              onChange={(ev) => setQText(ev.target.value)} />
           </div>
           <div>
             <span className={label}>Your rating</span>
