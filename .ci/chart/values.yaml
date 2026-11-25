@@ -1,7 +1,7 @@
 # Public host. The library chart builds every host as <subdomain>.<global.domain>, so it cannot render a monomotion.org
-# host; templates/ingress-public.yaml does. Off until the public launch.
+# host; templates/ingress-public.yaml does. Launched 2026-11-25 after the step 12 review.
 publicIngress:
-  enabled: false
+  enabled: true
   host: gallery.monomotion.org
 
 mononen-library-chart:
