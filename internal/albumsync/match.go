@@ -75,7 +75,7 @@ func MatchAlbum(items []gphotos.Item, sources []Source, thumbHash func(gphotos.I
 		if withMS {
 			kept := cands[:0:0]
 			for _, si := range cands {
-				if t := sources[si].TakenMS; t != nil && *t/10 == sub/10 {
+				if t := sources[si].TakenMS; t != nil && sameSubSecond(*t, sub) {
 					kept = append(kept, si)
 				}
 			}
@@ -114,6 +114,13 @@ func MatchAlbum(items []gphotos.Item, sources []Source, thumbHash func(gphotos.I
 		}
 	}
 	return out, errors.Join(errs...)
+}
+
+// sameSubSecond reports whether a photosort sub-second (SubSecTimeOriginal as ms) is the album's sub-second.
+// Canon writes hundredths, so both sides are compared to the hundredth. Google Photos also drops a leading zero
+// before reading the digits: SubSecTimeOriginal "04" (40 ms) shows up in the album as 400 ms.
+func sameSubSecond(sourceMS, albumMS int) bool {
+	return sourceMS/10 == albumMS/10 || (sourceMS < 100 && sourceMS*10 == albumMS)
 }
 
 // nearest returns the candidate with the smallest distance to h; candidates without a hash rank last and
