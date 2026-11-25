@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 
 	"github.com/mononendev/photo-gallery/internal/api"
+	"github.com/mononendev/photo-gallery/internal/db"
 )
 
 func serveCmd() *cobra.Command {
@@ -30,11 +30,14 @@ func serveCmd() *cobra.Command {
 			ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, os.Interrupt)
 			defer stop()
 
-			pool, err := pgxpool.New(ctx, dsn)
+			pool, err := db.Open(ctx, dsn)
 			if err != nil {
 				return fmt.Errorf("opening the database: %w", err)
 			}
 			defer pool.Close()
+			if err := db.Migrate(ctx, pool); err != nil {
+				return fmt.Errorf("migrating the database: %w", err)
+			}
 
 			srv := &api.Server{Pool: pool, Version: version, Log: slog.Default()}
 			public := &http.Server{Addr: ":" + envOr("GALLERY_PORT", "8080"), Handler: srv.Public()}
