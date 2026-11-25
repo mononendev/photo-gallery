@@ -3,6 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { publicApi, ApiError, type PhotoQuery } from '../api/client';
 import { ErrorBox, Loading } from '../components/Status';
 import { PhotoGrid } from '../components/PhotoGrid';
+import { LinkedText } from '../components/LinkedText';
 import { PAGE_SIZE, parseFilters } from '../lib/filters';
 import { useQDraft } from '../lib/useQDraft';
 import { RATING_COLORS, RATING_NAMES, TIER_NAMES, fmtDate } from '../lib/rating';
@@ -60,7 +61,11 @@ export default function EventPage() {
         <div className="mt-1 text-sm text-gray-400">
           {fmtDate(e.event_date)}{e.series && ` · ${e.series}`}
         </div>
-        {e.description && <p className="mt-2 max-w-3xl whitespace-pre-line text-gray-300">{e.description}</p>}
+        {e.description && (
+          <p className="mt-2 max-w-3xl whitespace-pre-line text-gray-300">
+            <LinkedText text={e.description} />
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap gap-4 text-sm">
           {e.albums.map((a) => (
             <a key={a.share_url} href={a.share_url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
