@@ -85,3 +85,14 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
   Tailwind modal because the app has no MUI. `Layout` mounts it only under `/events/`.
 - About: the old page's image is an external `lh3` URL, not a repo asset, so it is linked directly.
 - Not browser-checked; `pnpm run build` and `pnpm run lint` pass.
+
+### Admin web pages (2026-11-25, pg-oi92)
+
+- Admin pages live in `web/src/pages/admin/` with their own `AdminLayout` (no public nav), registered as a sibling
+  of the public `Layout` route so the public-web task's header edits do not touch them.
+- `/admin/events/:slug` reads its event from the `['admin-events']` list query; the API has no single-event GET.
+- Sync status is its own query with `refetchInterval` 2000 ms while `running`. When a run leaves `running`, the events
+  list and photo grid are invalidated when `sync_finished_at` changes, and after saving the event form.
+- Photo grid uses `useInfiniteQuery` (100 per page; API returns `{items,total}`). Hide/unhide patches the cached pages in place.
+- Types and `adminApi` were appended to `web/src/api/client.ts` (admin calls use `/admin-api`).
+- Verified with `pnpm run build && pnpm run lint`; not exercised against a live admin API (step 6 is a separate ticket).

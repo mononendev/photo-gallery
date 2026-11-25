@@ -139,3 +139,86 @@ export const publicApi = {
   photos: (p: PhotoQuery) => request<PhotoList>(`/api/photos${photoQs(p)}`),
   photo: (id: number | string) => request<PhotoDetail>(`/api/photos/${id}`),
 };
+
+// ---------------------------------------------------------------------------
+// Admin API (/admin-api, LAN only)
+// ---------------------------------------------------------------------------
+
+export interface AdminAlbum { name: string; share_url: string }
+
+export type SyncState = 'idle' | 'running' | 'done' | 'failed';
+
+export interface UnmatchedItem { album: string; media_key: string; url: string }
+
+export interface SyncResult {
+  albums: number;
+  items: number;
+  matched_time: number;
+  matched_time_hash: number;
+  matched_hash: number;
+  unmatched: number;
+  unmatched_items: UnmatchedItem[] | null;
+}
+
+export interface SyncStatus {
+  sync_state: SyncState;
+  sync_started_at: string | null;
+  sync_finished_at: string | null;
+  sync_result: SyncResult | null;
+  sync_error: string | null;
+}
+
+export interface AdminEvent extends SyncStatus {
+  slug: string;
+  title: string;
+  series: string | null;
+  event_date: string;
+  description: string;
+  published: boolean;
+  albums: AdminAlbum[];
+  photos: number;
+  matched: number;
+  sources: number;
+}
+
+export interface AdminEventInput {
+  title: string;
+  series: string | null;
+  event_date: string;
+  description: string;
+  published: boolean;
+  albums: AdminAlbum[];
+}
+
+export type MatchMethod = 'time' | 'time_hash' | 'hash';
+
+export interface AdminPhoto {
+  id: number;
+  album: string;
+  base_url: string;
+  width: number;
+  height: number;
+  taken_at: string;
+  hidden: boolean;
+  match_method: MatchMethod | null;
+  source_id: number | null;
+  rel_path: string | null;
+}
+
+export interface AdminPhotoPage { items: AdminPhoto[]; total: number }
+
+export const adminApi = {
+  events: () => request<AdminEvent[]>('/admin-api/events'),
+  putEvent: (slug: string, body: AdminEventInput) =>
+    request<AdminEvent>(`/admin-api/events/${encodeURIComponent(slug)}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteEvent: (slug: string) =>
+    request<void>(`/admin-api/events/${encodeURIComponent(slug)}`, { method: 'DELETE' }),
+  startSync: (slug: string) =>
+    request<{ sync_state: SyncState }>(`/admin-api/events/${encodeURIComponent(slug)}/sync`, { method: 'POST' }),
+  syncStatus: (slug: string) =>
+    request<SyncStatus>(`/admin-api/events/${encodeURIComponent(slug)}/sync`),
+  photos: (slug: string, offset: number, limit: number) =>
+    request<AdminPhotoPage>(`/admin-api/events/${encodeURIComponent(slug)}/photos${qs({ offset, limit })}`),
+  setHidden: (id: number, hidden: boolean) =>
+    request<void>(`/admin-api/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ hidden }) }),
+};
