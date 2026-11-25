@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,6 +27,18 @@ type Server struct {
 	BaseCtx context.Context
 	// GPhotos fetches the albums for syncs; nil means a client with defaults.
 	GPhotos *gphotos.Client
+
+	syncs sync.WaitGroup
+}
+
+// WaitSyncs blocks until the background syncs have recorded their end state, or ctx is done.
+func (s *Server) WaitSyncs(ctx context.Context) {
+	done := make(chan struct{})
+	go func() { s.syncs.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
 }
 
 // status is a handler result with a status code other than 200; a nil Body sends no body.

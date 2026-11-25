@@ -121,16 +121,19 @@ func TestAdminSyncFlow(t *testing.T) {
 			} `json:"unmatched_items"`
 		} `json:"sync_result"`
 	}
-	for i := 0; ; i++ {
-		call(t, h, "GET", "/admin-api/events/test-ev/sync", "", 200, &st)
-		if st.SyncState != "running" {
-			break
+	waitSync := func() {
+		for i := 0; ; i++ {
+			call(t, h, "GET", "/admin-api/events/test-ev/sync", "", 200, &st)
+			if st.SyncState != "running" {
+				return
+			}
+			if i > 100 {
+				t.Fatal("sync did not finish")
+			}
+			time.Sleep(50 * time.Millisecond)
 		}
-		if i > 100 {
-			t.Fatal("sync did not finish")
-		}
-		time.Sleep(50 * time.Millisecond)
 	}
+	waitSync()
 	if st.SyncState != "done" {
 		t.Fatalf("sync %s: %v", st.SyncState, st.SyncError)
 	}
@@ -185,6 +188,10 @@ func TestAdminSyncFlow(t *testing.T) {
 
 	// A second sync is allowed after the first finished and is idempotent.
 	call(t, h, "POST", "/admin-api/events/test-ev/sync", "", 202, nil)
+	waitSync()
+	if r := st.SyncResult; st.SyncState != "done" || r.Items != 4 || r.MatchedTime != 1 || r.Unmatched != 3 {
+		t.Fatalf("second sync %s: %+v", st.SyncState, r)
+	}
 
 	call(t, h, "DELETE", "/admin-api/events/test-ev", "", 204, nil)
 	call(t, h, "DELETE", "/admin-api/events/test-ev", "", 404, nil)

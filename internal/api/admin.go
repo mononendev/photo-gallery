@@ -259,7 +259,9 @@ func (s *Server) adminStartSync(r *http.Request) (any, error) {
 	if gp == nil {
 		gp = &gphotos.Client{}
 	}
+	s.syncs.Add(1)
 	go func() {
+		defer s.syncs.Done()
 		if _, err := albumsync.RunStarted(base, st, gp, id, slug); err != nil {
 			s.Log.Error("sync failed", "event", slug, "err", err)
 		}

@@ -70,7 +70,11 @@ func serveCmd() *cobra.Command {
 			slog.Info("shutting down")
 			sctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			return errors.Join(public.Shutdown(sctx), admin.Shutdown(sctx))
+			err = errors.Join(public.Shutdown(sctx), admin.Shutdown(sctx))
+			// The base context is cancelled, so running syncs stop and record 'failed'; wait for that
+			// before the deferred pool.Close.
+			srv.WaitSyncs(sctx)
+			return err
 		},
 	}
 }
