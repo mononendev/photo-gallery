@@ -144,3 +144,14 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
   links resolve to a share page that answers HTTP 404, so those albums are no longer shared; "Dave's Photos" still
   works. A sync changes nothing when any album fails, and every `seed-legacy` rerun would put the dead links back,
   so both are dropped from the seed. Re-share them and add them again in the admin page to restore them.
+
+### Google Photos drops the sub-second's leading zero (2026-11-25, pg-88rf)
+
+- First production `photosort publish` for OCSF6 (8387 sources, 4384 album photos): 3802 matched by time, 192 by
+  time+hash, 382 by hash, 8 unmatched. The 382 hash matches were all Canon frames with a photosort row at the same
+  second, so the time step should have found them.
+- In 376 of the 382 the album's milliseconds are 10x photosort's: `SubSecTimeOriginal` "04" (40 ms; exiftool on
+  `AA4I6892.CR2` shows `04`) appears in the album as 400 ms. Google drops the leading zero and reads "4" as .4 s.
+  Values without a leading zero ("94" → 940) match exactly (3761 of 3761 time matches).
+- The matcher now also accepts `source < 100 && source*10 == album` as the same sub-second. "40" and "04" in the same
+  second both fit 400 ms; that is a normal tie and the dHash decides (`time_hash`).
