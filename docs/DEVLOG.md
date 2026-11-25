@@ -72,3 +72,16 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - `ReplaceAlbumPhotos` takes the Google album id as an extra argument (stored on the album) so step 6 needs no second call.
 - `SourcesForEvent` and `UpsertSources` store the dHash as `int64(uint64)`; callers see `*uint64`.
 - `Event` from `GetEvent`/`ListEvents` carries `Photos`, `Matched`, `Sources` counts for the admin list (computed by subqueries).
+
+### Public web pages (2026-11-25, pg-kyop)
+
+- Added `/`, `/events/:slug`, `/events/:slug/photos/:id`, `/search`, `/about` against the step 10 contract. Types and
+  `publicApi` live in `web/src/api/client.ts`; `request`/`qs` are unchanged (`qs` cannot repeat keys, so photo queries
+  use their own builder).
+- Event filter state is the URL query using the API's own parameter names (`q`, `keyword`, `rating`, `tier`,
+  `min_score`, `keeper`, `lens`, `album`, `sort`), so links share and `parseFilters` feeds the API call directly.
+  Paging is `useInfiniteQuery` with offset = items loaded so far, 60 per page.
+- Disclaimer: ported with the same text and `disclaimerAcceptedAt` key (15 min). The MUI dialog became a plain
+  Tailwind modal because the app has no MUI. `Layout` mounts it only under `/events/`.
+- About: the old page's image is an external `lh3` URL, not a repo asset, so it is linked directly.
+- Not browser-checked; `pnpm run build` and `pnpm run lint` pass.
