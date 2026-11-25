@@ -155,3 +155,24 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
   Values without a leading zero ("94" → 940) match exactly (3761 of 3761 time matches).
 - The matcher now also accepts `source < 100 && source*10 == album` as the same sub-second. "40" and "04" in the same
   second both fit 400 ms; that is a normal tie and the dHash decides (`time_hash`).
+
+### Real-data run (2026-11-25, pg-88rf)
+
+- `seed-legacy` in the production pod: all 6 events synced in 89 s. ocsf4 5677 album photos (2 albums), ocsf5 1780
+  (1), ocsf6 4384 (3), flf7 6692 (3), flf8 3310 (3), flfx 5843 (5).
+- `photosort publish --event ocsf6 --folder "RAW/Oak City Shred Fest/2026"` in the photosort-api pod (746 s, most of
+  it the sync's thumbnail hashing): `sent 8387 photos to ocsf6`, then
+  `synced ocsf6: 4384 album photos, 3802 matched by time, 192 by time+hash, 382 by hash, 8 unmatched`.
+- The 382 hash matches led to the leading-zero fix above. Re-sync after the fix (87 s):
+  4170 by time, 213 by time+hash, 0 by hash, 1 unmatched. The one unmatched item is a 3414x1000 panorama in
+  "Small Group Photo", a stitched export with no single source frame.
+- Spot checks, album `=w400` next to photosort's `/media/thumb/<source_id>`:
+  - Before the fix: 10 random Canon `time` matches, 10 random Sony `time_hash` matches and 6 `hash` matches. All 26
+    show the same frame.
+  - After the fix: 10 Canon `time` matches (6 with an album sub-second that is a multiple of 100, the case the fix
+    adds) and 10 more Sony `time_hash` matches. All 20 show the same frame.
+  - At thumbnail size, neighbouring burst frames can look alike, so a Sony `time_hash` match one frame off would not
+    show up in this check.
+- Search works on real data: `/api/photos?event=ocsf6&q=orange jersey dust&keyword=forest_edge` returns photo 7778
+  with its description, focus tier 3 and model score 4. No OCSF6 photo has a cull rating yet (photosort `rating` is
+  the manual one), so `rating` is null everywhere and `rating=none` returns all photos.
