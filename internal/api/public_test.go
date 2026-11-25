@@ -52,7 +52,7 @@ func newFixture(t *testing.T) *fixture {
 	t0 := time.Date(2026, 4, 23, 9, 0, 0, 0, time.UTC)
 	ph := func(key string, sec int, src int64) store.PhotoInput {
 		in := store.PhotoInput{MediaKey: key, BaseURL: "https://lh3/" + key, Width: 3, Height: 2,
-			TakenAt: t0.Add(time.Duration(sec) * time.Second), Position: sec}
+			TakenAt: t0.Add(time.Duration(sec) * time.Second), Position: 10 - sec} // position runs against taken_at on purpose
 		if src != 0 {
 			id := sid[src]
 			m := "time"

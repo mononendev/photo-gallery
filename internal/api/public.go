@@ -124,10 +124,10 @@ func (s *Server) publicPhotos(r *http.Request) (any, error) {
 	}
 	st := store.New(s.Pool)
 	if f.Event != "" {
-		if _, err := st.GetPublicEvent(r.Context(), f.Event); errors.Is(err, store.ErrNotFound) {
-			return nil, errf(404, "event not found")
-		} else if err != nil {
+		if ok, err := st.PublicEventExists(r.Context(), f.Event); err != nil {
 			return nil, err
+		} else if !ok {
+			return nil, errf(404, "event not found")
 		}
 	}
 	items, total, err := st.ListPublicPhotos(r.Context(), f)

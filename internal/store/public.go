@@ -171,6 +171,13 @@ func (s *Store) ListPublicEvents(ctx context.Context) ([]PublicEvent, error) {
 	return out, nil
 }
 
+// PublicEventExists reports whether slug is a published event.
+func (s *Store) PublicEventExists(ctx context.Context, slug string) (bool, error) {
+	var ok bool
+	err := s.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM events WHERE slug = $1 AND published)`, slug).Scan(&ok)
+	return ok, err
+}
+
 // GetPublicEvent returns ErrNotFound for unknown and unpublished events.
 func (s *Store) GetPublicEvent(ctx context.Context, slug string) (PublicEventDetail, error) {
 	var d PublicEventDetail
