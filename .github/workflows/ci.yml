@@ -1,0 +1,119 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["**"]
+
+env:
+  REGISTRY: registry.adoah.dev
+
+jobs:
+  test-go:
+    runs-on: [homelab]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gallery
+        ports: ["5432:5432"]
+    env:
+      # A throwaway Postgres next to the job; each test gets its own schema. CI never touches prd-db-cluster.
+      GALLERY_TEST_PG: postgres://postgres:postgres@localhost:5432/gallery?sslmode=disable
+      GALLERY_REQUIRE_PG: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        # The race detector needs cgo, and so a C compiler; the homelab runners don't all have one.
+        run: |
+          if command -v gcc >/dev/null; then CGO_ENABLED=1 go test -race ./...; else go test ./...; fi
+
+  test-web:
+    runs-on: [homelab]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+      # pnpm comes from corepack, at the version package.json pins (packageManager).
+      - name: Enable pnpm
+        working-directory: web
+        run: |
+          corepack enable
+          echo "COREPACK_ENABLE_DOWNLOAD_PROMPT=0" >> "$GITHUB_ENV"
+          echo "PNPM_STORE=$(COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm store path)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck and build
+        working-directory: web
+        run: pnpm run build
+      - name: Lint
+        working-directory: web
+        run: pnpm run lint
+
+  version:
+    runs-on: [homelab]
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        run: echo "version=${{ github.ref_name }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: [version, test-go, test-web]
+    runs-on: [homelab]
+    strategy:
+      fail-fast: false   # one image failing shouldn't cancel the others' builds
+      matrix:
+        image: [api, ui]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install buildctl
+        run: |
+          command -v buildctl && exit 0
+          BUILDKIT_VERSION=$(curl -s https://api.github.com/repos/moby/buildkit/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+          curl -fsSL "https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}/buildkit-${BUILDKIT_VERSION}.linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local bin/buildctl
+      - name: Build and push ${{ matrix.image }} image
+        run: |
+          buildctl \
+            --tlscacert "$BUILDKIT_CLIENT_CA" --tlscert "$BUILDKIT_CLIENT_CERT" --tlskey "$BUILDKIT_CLIENT_KEY" \
+            --tlsservername buildkit.adoah.dev \
+          build \
+            --frontend dockerfile.v0 \
+            --local context=. --local dockerfile=docker \
+            --opt filename=${{ matrix.image }}.Dockerfile --opt target=production \
+            --opt build-arg:VERSION=${{ needs.version.outputs.version }} \
+            --opt build-arg:GIT_SHA=${{ github.sha }} \
+            --opt build-arg:BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --import-cache type=registry,ref=${{ env.REGISTRY }}/projects/photo-gallery-${{ matrix.image }}:buildcache \
+            --export-cache type=registry,ref=${{ env.REGISTRY }}/projects/photo-gallery-${{ matrix.image }}:buildcache,mode=max \
+            --output type=image,name=${{ env.REGISTRY }}/projects/photo-gallery-${{ matrix.image }}:${{ needs.version.outputs.version }},push=true
+
+  deploy:
+    needs: [version, build]
+    if: github.ref_name == 'master' || github.ref_name == 'main'
+    runs-on: [homelab]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Helm
+        run: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - name: Deploy with Helm
+        run: |
+          helm repo add mononen-charts https://mononen.github.io/charts/
+          helm repo update
+          helm dependency update .ci/chart
+          helm upgrade --install photo-gallery .ci/chart \
+            --namespace production \
+            --set mononen-library-chart.global.imageDefaults.tag=${{ needs.version.outputs.version }}

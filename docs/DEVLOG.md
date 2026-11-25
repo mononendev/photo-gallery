@@ -1,0 +1,38 @@
+# Dev log
+
+A working journal kept while building photo-gallery: decisions, measurements, and what the first real runs showed,
+in the order they happened. For how to use the project, start with the [README](../README.md).
+
+### Album page format (2026-11-25, pg-3r5h)
+
+Verified against the public album `https://photos.app.goo.gl/TysU32DNqBb1fKjU6` ("OCSF6 Selects", 320 items). The
+album client (plan step 5) parses this; if it breaks, probe the live album again and update this entry.
+
+1. GET the share URL with `User-Agent: Mozilla/5.0` and follow redirects. The final URL is
+   `https://photos.google.com/share/<albumID>?key=<authKey>`.
+2. The HTML holds `AF_initDataCallback({key: 'ds:1', ... data:<JSON>, sideChannel ...})`. The JSON `d` is a
+   6-element array: `d[1]` is the first page of items (up to 300), `d[2]` the next-page token (null or empty at
+   the end), `d[3][1]` the album title, `d[3][21]` the item count (320 observed).
+3. Item `it`: `it[0]` media key; `it[1][0]` base URL (`https://lh3.googleusercontent.com/pw/...`, no size suffix);
+   `it[1][1]`/`it[1][2]` width/height; `it[2]` capture time as UTC ms; `it[4]` timezone offset in ms (`-14400000`,
+   `-18000000` observed). Local capture time is `it[2] + it[4]` read as UTC. 284 of 300 timestamps had non-zero
+   milliseconds, and 43 seconds held more than one item (up to 10).
+4. Further pages: POST `https://photos.google.com/_/PhotosUi/data/batchexecute` with form field
+   `f.req=[[["snAcKc","[\"<albumID>\",\"<token>\",null,\"<authKey>\"]",null,"generic"]]]`. The response has a line
+   starting `[["wrb.fr"`; decode it, then decode `outer[0][2]`. The result has the shape of `d` (items at `[1]`,
+   token at `[2]`). Page 2 returned the last 20 items and no token.
+5. Size suffixes on `lh3` URLs: `=w400`, `=w2048-h2048`, `=d` (the original, with EXIF). The gallery never uses `=d`.
+
+### Scaffold (2026-11-25, pg-3r5h)
+
+- Copied the photosort conventions (cobra, `wrap`/`errf`/`writeJSON`, buildctl CI, library-chart values) and dropped
+  what Postgres-only and no-analyzer make unnecessary.
+- One UI image serves two hosts. nginx renders `docker/nginx/default.conf.template` at start, and
+  `NGINX_ENVSUBST_FILTER=GALLERY_` keeps it from touching nginx's own `$uri`. `GALLERY_UI_MODE` includes
+  `public.conf` (admin routes 404) or `admin.conf` (proxy `/admin-api` to the API's port 8081).
+- Chart: `global.security.enabled: false` because the nginx UI pods bind :80 and write `/var/cache/nginx` (as
+  photosort and stasharr do); the `api` component turns it back on with 568/568/568. The admin component has
+  `fullnameOverride: photo-gallery-admin` so its Service is not `photo-gallery-gallery-admin`.
+- The public Service is named `photo-gallery` (primary component: release name), checked with `helm template`.
+- The `serve` command opens the pool with pgxpool directly; step 3 moves that to `internal/db.Open` and adds `Migrate`.
+- `.tool-versions` pins Node 24.21.0, which was not installed on the dev machine; local runs used 24.14.0.

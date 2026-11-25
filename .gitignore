@@ -1,0 +1,9 @@
+.tickets/
+bin/
+web/node_modules/
+web/dist/
+.ci/chart/charts/
+.ci/chart/Chart.lock
+CLAUDE.md
+.claude/
+.scratch/

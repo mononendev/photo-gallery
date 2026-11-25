@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    include /etc/nginx/snippets/${GALLERY_UI_MODE}.conf;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

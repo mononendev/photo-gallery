@@ -1,0 +1,11 @@
+# Keep the build context small: the images only COPY the Go module (go.mod, go.sum, cmd/, internal/), web/ and docker/.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!web/
+!docker/
+**/*_test.go
+web/node_modules
+web/dist

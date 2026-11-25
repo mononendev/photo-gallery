@@ -1,0 +1,28 @@
+{{- if .Values.publicIngress.enabled }}
+# The public host lives outside global.domain, which the library chart cannot express, so it is rendered here.
+# The backend is the primary component's Service, named after the release.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: photo-gallery-public
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: external
+  rules:
+    - host: {{ .Values.publicIngress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - {{ .Values.publicIngress.host | quote }}
+      secretName: photo-gallery-public-tls
+{{- end }}

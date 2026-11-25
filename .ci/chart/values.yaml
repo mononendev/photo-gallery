@@ -1,0 +1,165 @@
+# Public host. The library chart builds every host as <subdomain>.<global.domain>, so it cannot render a monomotion.org
+# host; templates/ingress-public.yaml does. Off until the public launch.
+publicIngress:
+  enabled: false
+  host: gallery.monomotion.org
+
+mononen-library-chart:
+  global:
+    namespace: production
+    env: prd
+    domain: adoah.dev
+    security:
+      enabled: false   # the nginx UI pods bind :80 and write /var/cache/nginx; only the api pod runs as 568
+    imageDefaults:
+      pullSecrets:
+        - name: photo-gallery-harbor-pull   # robot pull secret, from the homelab repo (kubernetes/apps/production/photo-gallery)
+
+  components:
+    # The public UI: the React app, with /api proxied to the API and the admin routes answering 404.
+    photo-gallery:
+      enabled: true
+      primaryComponent: true
+      generate:
+        deployment: true
+        service: true
+        ingress: true
+        hpa: false
+        pdb: false
+        serviceaccount: false
+      containers:
+        - name: photo-gallery-ui
+          image:
+            repository: registry.adoah.dev/projects/photo-gallery-ui
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: GALLERY_UI_MODE
+              value: "public"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      service:
+        port: 80
+        targetPort: 80
+      ingress:
+        # Homelab conventions: class `internal` (LAN/tailnet); `lan-public` makes external-dns-internal publish the
+        # public A record -> the internal ingress IP.
+        className: internal
+        subdomain: gallery
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-production
+          external-dns.home.arpa/lan-public: "true"
+        internal:
+          tls:
+            - secretName: photo-gallery-tls
+              hosts:
+                - gallery.adoah.dev
+        external:
+          enabled: false
+
+    # The same UI image in admin mode: also proxies /admin-api to the API's admin port. LAN only.
+    gallery-admin:
+      enabled: true
+      fullnameOverride: photo-gallery-admin
+      generate:
+        deployment: true
+        service: true
+        ingress: true
+        hpa: false
+        pdb: false
+        serviceaccount: false
+      containers:
+        - name: gallery-admin-ui
+          image:
+            repository: registry.adoah.dev/projects/photo-gallery-ui
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: GALLERY_UI_MODE
+              value: "admin"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      service:
+        port: 80
+        targetPort: 80
+      ingress:
+        className: internal
+        subdomain: gallery-admin
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-production
+          external-dns.home.arpa/lan-public: "true"
+        internal:
+          tls:
+            - secretName: photo-gallery-admin-tls
+              hosts:
+                - gallery-admin.adoah.dev
+        external:
+          enabled: false
+
+    # Go server: public API on 8080, admin API on 8081 (the admin UI and photosort reach it through the Service).
+    api:
+      enabled: true
+      fullnameOverride: photo-gallery-api
+      replicaCount: 1
+      security:
+        enabled: true
+        podSecurityContext:
+          runAsUser: 568
+          runAsGroup: 568
+          fsGroup: 568
+      generate:
+        deployment: true
+        service: true
+        ingress: false
+        hpa: false
+        pdb: false
+        serviceaccount: false
+      containers:
+        - name: photo-gallery-api
+          image:
+            repository: registry.adoah.dev/projects/photo-gallery-api
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: admin
+              containerPort: 8081
+          env:
+            # The homelab repo owns Secret photo-gallery-db (key password, rotated there); Kubernetes expands
+            # $(DB_PASSWORD) because it is defined earlier in this list.
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photo-gallery-db
+                  key: password
+            - name: GALLERY_DB
+              value: "postgres://photo_gallery:$(DB_PASSWORD)@prd-db-cluster.production.svc.cluster.local:5432/photo_gallery"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+      service:
+        port: 8080
+        targetPort: 8080
+        additionalPorts:
+          - name: admin
+            port: 8081
+            targetPort: 8081
