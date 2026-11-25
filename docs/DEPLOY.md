@@ -34,7 +34,8 @@ Both live in the homelab repo (`kubernetes/apps/production/photo-gallery/app/`),
 - `photo-gallery-harbor-pull`: pull secret for `registry.adoah.dev`.
 
 CI needs no secrets of its own beyond what the `homelab` runners already carry (buildkit client certificates in
-`BUILDKIT_CLIENT_*`, cluster access for `helm`). Tests run against a throwaway Postgres service container.
+`BUILDKIT_CLIENT_*`, cluster access for `helm`). The `test-go` job installs `postgresql-16` from apt and runs the
+tests against that throwaway server; the runner pods have no Docker daemon for a `services:` container.
 
 ## Adding an event
 

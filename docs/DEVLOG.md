@@ -36,3 +36,6 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - The public Service is named `photo-gallery` (primary component: release name), checked with `helm template`.
 - The `serve` command opens the pool with pgxpool directly; step 3 moves that to `internal/db.Open` and adds `Migrate`.
 - `.tool-versions` pins Node 24.21.0, which was not installed on the dev machine; local runs used 24.14.0.
+- CI Postgres: the `homelab` runners are ARC pods without a Docker daemon, so a `services:` container fails at
+  `docker version` ("Value cannot be null. (Parameter 'network')"). `test-go` installs `postgresql-16` from apt
+  (Ubuntu 24.04 runner image, passwordless sudo) and starts it with `pg_ctlcluster`.
