@@ -187,3 +187,18 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Surprise: the dev machine's resolver still answered NXDOMAIN for `gallery.monomotion.org` for minutes after
   1.1.1.1 had the record, a negative-cache entry from the time the old release was gone. Check with
   `curl --resolve` or another resolver before suspecting external-dns.
+
+### Photosort data for the other events (2026-11-26)
+
+- Step 12 published photosort data for OCSF6 only, so the other events showed no labels and every label filter
+  returned 0 photos. Each event's folder was checked against its date first (the day folders hold the event date).
+- `photosort publish` results:
+
+  | Event | Folder | Sources | Time | Time+hash | Hash | Unmatched |
+  |---|---|---|---|---|---|---|
+  | flfx | `RAW/Float Life Fest/2026` | 9826 | 5783 | 59 | 0 | 1 |
+  | flf8 | `RAW/Float Life Fest/2025` | 5843 | 3269 | 36 | 3 | 2 |
+  | flf7 | `RAW/Float Life Fest/2024` | 10884 | 6650 | 42 | 0 | 0 |
+
+- OCSF4 (`RAW/Oak City Shred Fest/2024`) and OCSF5 (`.../2025`) have no analyzed photos in photosort
+  (`no analyzed photos under ...`). They show album photos without labels until photosort analyzes those folders.
