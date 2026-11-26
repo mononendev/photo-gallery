@@ -176,3 +176,14 @@ album client (plan step 5) parses this; if it breaks, probe the live album again
 - Search works on real data: `/api/photos?event=ocsf6&q=orange jersey dust&keyword=forest_edge` returns photo 7778
   with its description, focus tier 3 and model score 4. No OCSF6 photo has a cull rating yet (photosort `rating` is
   the manual one), so `rating` is null everywhere and `rating=none` returns all photos.
+
+### Public launch (2026-11-26, pg-6db1)
+
+- Launch approved after the step 12 review. `publicIngress.enabled: true` renders Ingress `photo-gallery-public`
+  (class `external`, backend `photo-gallery:80`, TLS `photo-gallery-public-tls`); the certificate was Ready within
+  seconds of the deploy.
+- Checks through Cloudflare: `/` 200, `/events/ocsf6` 200, `/api/events` 6 events, `/admin` and `/admin-api/events`
+  404.
+- Surprise: the dev machine's resolver still answered NXDOMAIN for `gallery.monomotion.org` for minutes after
+  1.1.1.1 had the record, a negative-cache entry from the time the old release was gone. Check with
+  `curl --resolve` or another resolver before suspecting external-dns.
